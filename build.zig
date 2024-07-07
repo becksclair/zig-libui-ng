@@ -10,12 +10,12 @@ pub fn build(b: *std.Build) !void {
     });
 
     const ui_module = b.addModule("ui", .{
-        .root_source_file = .{ .path = "src/ui.zig" },
+        .root_source_file = b.path("src/ui.zig"),
     });
     ui_module.linkLibrary(libui.artifact("ui"));
 
     const ui_extras_module = b.addModule("ui-extras", .{
-        .root_source_file = .{ .path = "src/extras.zig" },
+        .root_source_file = b.path("src/extras.zig"),
         .imports = &.{.{
             .name = "ui",
             .module = ui_module,
@@ -26,17 +26,17 @@ pub fn build(b: *std.Build) !void {
     const is_dynamic = false;
 
     inline for (examples, uses_extras) |example_name, use_extras| {
+        const manifest_path = if (is_dynamic)
+            "examples/example.manifest"
+        else
+            "examples/example.static.manifest";
+
         const exe = b.addExecutable(.{
             .name = example_name,
-            .root_source_file = .{ .path = "examples/" ++ example_name ++ ".zig" },
+            .root_source_file = b.path("examples/" ++ example_name ++ ".zig"),
             .target = target,
             .optimize = optimize,
-            .win32_manifest = .{
-                .path = if (is_dynamic)
-                    "examples/example.manifest"
-                else
-                    "examples/example.static.manifest",
-            },
+            .win32_manifest = b.path(manifest_path),
         });
         exe.root_module.addImport("ui", ui_module);
         if (use_extras) exe.root_module.addImport("ui-extras", ui_extras_module);
